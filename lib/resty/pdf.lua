@@ -2,6 +2,7 @@
 -- based on extensive work by https://github.com/tavikukko/lua-resty-hpdf/
 local ffi = require 'ffi'
 local ffi_cdef = ffi.cdef
+local ffi_new = ffi.new
 local C = ffi.load('libhpdf')
 
 ffi_cdef[[
