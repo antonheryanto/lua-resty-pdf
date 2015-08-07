@@ -2,11 +2,7 @@
 -- based on extensive work by https://github.com/tavikukko/lua-resty-hpdf/
 local ffi = require 'ffi'
 local ffi_cdef = ffi.cdef
-local name = 'libhpdf'
-if os == 'Windows' or os == 'OSX' then 
-    name = name .. (os == 'Windows' and '.dll' or '.dylib')
-end
-local C = ffi.load(name)
+local C = ffi.load('libhpdf')
 
 ffi_cdef[[
 typedef void *HPDF_HANDLE;
