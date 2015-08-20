@@ -136,6 +136,9 @@ void * HPDF_Page_SetTextLeading(HPDF_Page page, HPDF_REAL value);
 void * HPDF_Page_Rectangle(HPDF_Page page, HPDF_REAL x, HPDF_REAL y,
     HPDF_REAL width, HPDF_REAL height);
 void * HPDF_Page_Stroke(HPDF_Page page);
+void * HPDF_Page_SetRGBFill(HPDF_Page page, HPDF_REAL r, HPDF_REAL g, 
+    HPDF_REAL b);
+void * HPDF_Page_Fill(HPDF_Page page);
 void * HPDF_Page_GSave(HPDF_Page page);
 void * HPDF_Page_GRestore(HPDF_Page page);
 void * HPDF_Page_GetLineWidth(HPDF_Page page);
@@ -280,6 +283,12 @@ function _M.cell(self, x, y, width, height, text, align)
     C.HPDF_Page_EndText(page)
 end
 
+function _M.rect(self, x, y, width, height)
+    local page = self.page
+    C.HPDF_Page_Rectangle(page, x, y, width, height);
+    C.HPDF_Page_Stroke(page)
+end
+
 function _M.get_size(self)
     local page = self.page
     self.width = C.HPDF_Page_GetWidth(page)
@@ -302,10 +311,11 @@ function _M.draw_image(self, image, x, y, width, height)
     C.HPDF_Page_DrawImage(self.page, image, x, py, width, h) 
 end
 
-function _M.draw_line(self, x, y, width)
+function _M.draw_line(self, x, y, width, height)
     local page = self.page
+    height = height or 0
     C.HPDF_Page_MoveTo(page, x, y)
-    C.HPDF_Page_LineTo(page, x + width, y)
+    C.HPDF_Page_LineTo(page, x + width, y - height)
     C.HPDF_Page_Stroke(page)
 end
 
