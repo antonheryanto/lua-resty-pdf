@@ -172,7 +172,7 @@ local byte = string.byte
 local sub = string.sub
 local tonumber = tonumber
 local pcall = pcall
-local log = ngx.say
+local log = ngx.log
 local WARN = ngx.WARN
 local utctime = ngx.utctime
 
@@ -182,7 +182,7 @@ if not ok then
 end
 
 local function err(error_no, detail_no, user_data)
-    log(WARN, format('error no: %04X, detail no: %d', tonumber(error_no), tonumber(detail_no)))
+    log(WARN, format('libharu error no: %04X, detail no: %d', tonumber(error_no), tonumber(detail_no)))
 end
 
 local _M = new_tab(0, 10)
