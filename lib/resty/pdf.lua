@@ -164,6 +164,8 @@ void * HPDF_Page_DrawImage (HPDF_Page page, HPDF_Image image, HPDF_REAL x,
     HPDF_REAL y, HPDF_REAL width, HPDF_REAL height);
 HPDF_UINT HPDF_Image_GetWidth(HPDF_Image image);
 HPDF_UINT HPDF_Image_GetHeight(HPDF_Image image);
+HPDF_UINT HPDF_Page_MeasureText(HPDF_Page page, const char *text,
+    HPDF_REAL width, HPDF_BOOL wordwrap, HPDF_REAL *real_width);
 ]]
 
 local setmetatable = setmetatable
