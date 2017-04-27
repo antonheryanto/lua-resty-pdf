@@ -103,6 +103,7 @@ void * HPDF_SetCompressionMode(HPDF_Doc pdf, HPDF_UINT mode);
 void * HPDF_AddPage(HPDF_Doc pdf);
 float HPDF_Page_GetHeight(HPDF_Page page);
 float HPDF_Page_GetWidth(HPDF_Page page);
+float HPDF_Page_GetTextLeading(HPDF_Page page);
 void * HPDF_GetFont(HPDF_Doc pdf, const char *font_name, 
     const char *encoding_name);
 void * HPDF_Page_SetFontAndSize(HPDF_Page page,HPDF_Font font, HPDF_REAL size);
@@ -166,6 +167,7 @@ HPDF_UINT HPDF_Image_GetWidth(HPDF_Image image);
 HPDF_UINT HPDF_Image_GetHeight(HPDF_Image image);
 HPDF_UINT HPDF_Page_MeasureText(HPDF_Page page, const char *text,
     HPDF_REAL width, HPDF_BOOL wordwrap, HPDF_REAL *real_width);
+HPDF_UINT HPDF_Font_GetCapHeight(HPDF_Font font);
 ]]
 
 local setmetatable = setmetatable
@@ -174,6 +176,7 @@ local byte = string.byte
 local sub = string.sub
 local tonumber = tonumber
 local pcall = pcall
+local ceil = math.ceil
 local log = ngx.log
 local WARN = ngx.WARN
 local utctime = ngx.utctime
@@ -221,15 +224,22 @@ function _M.new(self, err_fn)
     end
     local page = C.HPDF_AddPage(doc)
     local font = C.HPDF_GetFont(doc, "Times-Roman", nil)
+    local font_size = 12
     local date = parse_date()
+    local line_space = 1.7
 
     C.HPDF_SetInfoDateAttr(doc, C.HPDF_INFO_CREATION_DATE, date)    
     C.HPDF_SetInfoDateAttr(doc, C.HPDF_INFO_MOD_DATE, date)    
     C.HPDF_Page_SetSize (page, C.HPDF_PAGE_SIZE_A4, C.HPDF_PAGE_PORTRAIT)
-    C.HPDF_Page_SetFontAndSize (page, font, 12)
+    C.HPDF_Page_SetFontAndSize (page, font, font_size)
+    local line_height = line_space * C.HPDF_Font_GetCapHeight(font) * font_size / 1000
+    C.HPDF_Page_SetTextLeading(page, line_height)
 
     return setmetatable({ 
+        line_space = line_space,
+        line_height = line_height,
         font = font,
+        font_size = font_size,
         width = C.HPDF_Page_GetWidth(page),
         height = C.HPDF_Page_GetHeight(page),
         C = C, 
@@ -248,14 +258,45 @@ function _M.compress(self)
     C.HPDF_SetCompressionMode(self.doc, 15)
 end
 
+function _M.get_font_ttf(self, name)
+    local font = C.HPDF_LoadTTFontFromFile(self.doc, name, 1)
+    return C.HPDF_GetFont(self.doc, font, "CP1250")
+end
+
 function _M.get_font(self, name)
     return C.HPDF_GetFont(self.doc, name, nil)
 end
 
 function _M.set_font(self, font, size)
-    if not size then size = 12 end
+    if size and size ~= self.font_size then self.font_size = size end
     if font then self.font = font end
-    C.HPDF_Page_SetFontAndSize (self.page, self.font, size)
+    self.line_height = _M.get_line_height(self)
+    C.HPDF_Page_SetFontAndSize (self.page, self.font, self.font_size)
+    return self.line_height
+end
+
+function _M.set_margin(self, top, left, bottom, right)
+    if top and not left then left = top end
+    if top and not bottom then bottom = top end
+    if left and not right then right = left end
+    self.margin_top = top
+    self.margin_left = left
+    self.margin_bottom = bottom
+    self.margin_right = right
+    local height = self.height
+    local width = self.width
+    self.content_x = left
+    self.content_y = height - top
+    self.content_right = width - left
+    self.content_width = width - left - right
+    self.content_height = height - top - bottom
+end
+
+function _M.get_line_height(self)
+    local font = self.font
+    local size = self.font_size
+    local line = self.line_space
+    return line * C.HPDF_Font_GetCapHeight(font) * size / 1000
 end
 
 function _M.add_page(self)
@@ -275,6 +316,29 @@ function _M.write(self, text)
     C.HPDF_Page_BeginText(page)
     C.HPDF_Page_ShowText(page, text)
     C.HPDF_Page_EndText(page)
+end
+
+function _M.text_width(self, text)
+    local page = self.page
+    return C.HPDF_Page_TextWidth(page, text)
+end
+
+function _M.paragraph(self, y, text, indent, align)
+    local height = self.line_height
+    local left = self.margin_left + (indent or 0)
+    local bottom = self.margin_bottom
+    local content = self.content_width
+    local tw = _M.text_width(self, text)
+    local th = ceil(tw / (content - 10)) * height
+    if y - th - height <= bottom then
+        _M.add_page(self)
+        y = self.content_y
+    end
+    local curLine = y - th
+    
+    _M.cell(self, left, y, content, th, text, align)
+
+    return curLine - height, curLine
 end
 
 function _M.cell(self, x, y, width, height, text, align)
