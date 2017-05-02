@@ -351,7 +351,7 @@ end
 
 function _M.rect(self, x, y, width, height)
     local page = self.page
-    C.HPDF_Page_Rectangle(page, x, y, width, height);
+    C.HPDF_Page_Rectangle(page, x, y - height, width, height);
     C.HPDF_Page_Stroke(page)
 end
 
