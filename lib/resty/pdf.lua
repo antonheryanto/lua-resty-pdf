@@ -174,6 +174,7 @@ local setmetatable = setmetatable
 local format = string.format
 local byte = string.byte
 local sub = string.sub
+local find = string.find
 local tonumber = tonumber
 local pcall = pcall
 local ceil = math.ceil
@@ -329,7 +330,20 @@ function _M.paragraph(self, y, text, indent, align)
     local bottom = self.margin_bottom
     local content = self.content_width
     local tw = _M.text_width(self, text)
-    local th = ceil(tw / (content - 10)) * height
+    local th = ceil(tw / (content - 15)) * height
+
+    local n = #text - 4
+    local i = 1
+    while true do
+        i = find(text, '\n', i, true)
+        if not i or i > n then
+            break
+        else
+            i = i + 1
+            th = th + height
+        end
+    end
+
     if y - th - height <= bottom then
         _M.add_page(self)
         y = self.content_y
