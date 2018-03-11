@@ -330,7 +330,7 @@ function _M.paragraph(self, y, text, indent, align)
     local bottom = self.margin_bottom
     local content = self.content_width
     local tw = _M.text_width(self, text)
-    local th = ceil(tw / (content - 15)) * height
+    local th = ceil(tw / (content - 25)) * height
 
     local n = #text - 4
     local i = 1
