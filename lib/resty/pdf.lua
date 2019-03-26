@@ -324,13 +324,14 @@ function _M.text_width(self, text)
     return C.HPDF_Page_TextWidth(page, text)
 end
 
-function _M.paragraph(self, y, text, indent, align)
+function _M.paragraph(self, y, text, indent, align, margin)
+    if not margin then margin = 25 end
     local height = self.line_height
     local left = self.margin_left + (indent or 0)
     local bottom = self.margin_bottom
     local content = self.content_width
     local tw = _M.text_width(self, text)
-    local th = ceil(tw / (content - 25)) * height
+    local th = ceil(tw / (content - margin)) * height
 
     local n = #text - 4
     local i = 1
